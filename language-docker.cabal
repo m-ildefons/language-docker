@@ -108,6 +108,7 @@ test-suite hspec
       Rank2Types
       OverloadedLists
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-unused-do-bind -fno-warn-orphans
+  build-tool-depends: hspec-discover:hspec-discover
   build-depends:
       HUnit >=1.2
     , QuickCheck

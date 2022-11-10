@@ -82,3 +82,5 @@ tests:
       - hspec
       - hspec-megaparsec
       - language-docker
+    build-tools:
+      - hspec-discover

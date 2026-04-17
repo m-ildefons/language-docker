@@ -61,6 +61,11 @@ spec = do
                   ( AddArgs [SourcePath "foo"] (TargetPath "bar") )
                   ( AddFlags NoChecksum (Chown "root:root") NoChmod NoLink NoUnpack [Exclude "*.tmp"] )
        in assertPretty "ADD --chown=root:root --exclude=*.tmp foo bar" add
+    it "with unpack flag" $ do
+      let add = Add
+                  ( AddArgs [SourcePath "foo"] (TargetPath "bar") )
+                  ( AddFlags NoChecksum NoChown NoChmod NoLink Unpack [] )
+       in assertPretty "ADD --unpack=true foo bar" add
 
   describe "pretty print COPY" $ do
     it "with just copy" $ do

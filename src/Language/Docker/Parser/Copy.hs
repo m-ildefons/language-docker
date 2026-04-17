@@ -14,6 +14,7 @@ data Flag
   | FlagChown Chown
   | FlagChmod Chmod
   | FlagLink Link
+  | FlagUnpack Unpack
   | FlagSource CopySource
   | FlagExclude Exclude
   | FlagInvalid (Text, Text)
@@ -64,15 +65,17 @@ parseAdd = do
   let chmodFlags = [c | FlagChmod c <- flags]
   let linkFlags = [l | FlagLink l <- flags]
   let excludeFlags = [e | FlagExclude e <- flags]
+  let unpackFlags = [u | FlagUnpack u <- flags]
   let invalidFlags = [i | FlagInvalid i <- flags]
   notFollowedBy (string "--") <?>
     "only the --checksum, --chown, --chmod, --link, --exclude flags or the src and dest paths"
-  case (invalidFlags, checksumFlags, chownFlags, linkFlags, chmodFlags, excludeFlags) of
-    ((k, v) : _, _, _, _, _, _) -> unexpectedFlag k v
-    (_, _ : _ : _, _, _, _, _) -> customError $ DuplicateFlagError "--checksum"
-    (_, _, _ : _ : _, _, _, _) -> customError $ DuplicateFlagError "--chown"
-    (_, _, _, _ : _ : _, _, _) -> customError $ DuplicateFlagError "--chmod"
-    (_, _, _, _, _ : _ : _, _) -> customError $ DuplicateFlagError "--link"
+  case (invalidFlags, checksumFlags, chownFlags, linkFlags, chmodFlags, unpackFlags, excludeFlags) of
+    ((k, v) : _, _, _, _, _, _, _) -> unexpectedFlag k v
+    (_, _ : _ : _, _, _, _, _, _) -> customError $ DuplicateFlagError "--checksum"
+    (_, _, _ : _ : _, _, _, _, _) -> customError $ DuplicateFlagError "--chown"
+    (_, _, _, _ : _ : _, _, _, _) -> customError $ DuplicateFlagError "--chmod"
+    (_, _, _, _, _ : _ : _, _, _) -> customError $ DuplicateFlagError "--link"
+    (_, _, _, _, _, _ : _ : _, _) -> customError $ DuplicateFlagError "--unpack"
     _ -> do
       let chk = case checksumFlags of
                   [] -> NoChecksum
@@ -86,7 +89,10 @@ parseAdd = do
       let lnk = case linkFlags of
                   [] -> NoLink
                   l : _ -> l
-      fileList "ADD" (\src dest -> Add (AddArgs src dest) (AddFlags chk cho chm lnk excludeFlags))
+      let unp = case unpackFlags of
+                  [] -> NoUnpack
+                  u : _ -> u
+      fileList "ADD" (\src dest -> Add (AddArgs src dest) (AddFlags chk cho chm lnk unp excludeFlags))
 
 heredocList :: (?esc :: Char) =>
                (NonEmpty SourcePath -> TargetPath -> Instruction Text) ->
@@ -118,16 +124,21 @@ unexpectedFlag :: Text -> Text -> Parser a
 unexpectedFlag name "" = customFailure $ NoValueFlagError (T.unpack name)
 unexpectedFlag name _ = customFailure $ InvalidFlagError (T.unpack name)
 
-copyFlag :: (?esc :: Char) => Parser Flag
-copyFlag = (FlagSource <$> try copySource <?> "only one --from") <|> addFlag
-
-addFlag :: (?esc :: Char) => Parser Flag
-addFlag = (FlagChecksum <$> try checksum <?> "--checksum")
+commonFlags :: (?esc :: Char) => Parser Flag
+commonFlags = (FlagChecksum <$> try checksum <?> "--checksum")
   <|> (FlagChown <$> try chown <?> "--chown")
   <|> (FlagChmod <$> try chmod <?> "--chmod")
   <|> (FlagLink <$> try link <?> "--link")
   <|> (FlagExclude <$> try exclude <?> "--exclude")
   <|> (FlagInvalid <$> try anyFlag <?> "other flag")
+
+copyFlag :: (?esc :: Char) => Parser Flag
+copyFlag = (FlagSource <$> try copySource <?> "only one --from")
+  <|> commonFlags
+
+addFlag :: (?esc :: Char) => Parser Flag
+addFlag = (FlagUnpack <$> try unpack <?> "--unpack")
+  <|> commonFlags
 
 checksum :: (?esc :: Char) => Parser Checksum
 checksum = do
@@ -151,6 +162,11 @@ link :: Parser Link
 link = do
   void $ string "--link"
   return Link
+
+unpack :: Parser Unpack
+unpack = do
+  void $ string "--unpack=true"
+  return Unpack
 
 copySource :: (?esc :: Char) => Parser CopySource
 copySource = do

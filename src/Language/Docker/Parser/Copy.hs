@@ -4,6 +4,7 @@ module Language.Docker.Parser.Copy
   )
 where
 
+import Data.Functor (($>))
 import Data.List.NonEmpty (NonEmpty, fromList)
 import qualified Data.Text as T
 import Language.Docker.Parser.Prelude
@@ -159,14 +160,18 @@ chmod = do
   return $ Chmod chm
 
 link :: Parser Link
-link = do
-  void $ string "--link"
-  return Link
+link = choice
+  [ string "--link=false" $> NoLink,
+    string "--link=true" $> Link,
+    string "--link" $> Link
+  ]
 
 unpack :: Parser Unpack
-unpack = do
-  void $ string "--unpack=true"
-  return Unpack
+unpack = choice
+  [ string "--unpack=false" $> NoUnpack,
+    string "--unpack=true" $> Unpack,
+    string "--unpack" $> Unpack
+  ]
 
 copySource :: (?esc :: Char) => Parser CopySource
 copySource = do

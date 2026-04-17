@@ -137,10 +137,55 @@ spec = do
             ]
 
     it "with unpack flag" $
+      let file = Text.unlines ["ADD --unpack archive.tar.gz /dest"]
+       in assertAst
+            file
+              [ Add
+                  ( AddArgs (fmap SourcePath ["archive.tar.gz"]) (TargetPath "/dest"))
+                  ( AddFlags NoChecksum NoChown NoChmod NoLink Unpack [] )
+              ]
+
+    it "with unpack flag explicit syntax" $
       let file = Text.unlines ["ADD --unpack=true archive.tar.gz /dest"]
        in assertAst
             file
               [ Add
                   ( AddArgs (fmap SourcePath ["archive.tar.gz"]) (TargetPath "/dest"))
                   ( AddFlags NoChecksum NoChown NoChmod NoLink Unpack [] )
+              ]
+
+    it "with no unpack flag explicit syntax" $
+      let file = Text.unlines ["ADD --unpack=false archive.tar.gz /dest"]
+       in assertAst
+            file
+              [ Add
+                  ( AddArgs (fmap SourcePath ["archive.tar.gz"]) (TargetPath "/dest"))
+                  ( AddFlags NoChecksum NoChown NoChmod NoLink NoUnpack [] )
+              ]
+
+    it "with link flag short syntax" $
+      let file = Text.unlines ["ADD --link foo /bar"]
+       in assertAst
+            file
+              [ Add
+                  ( AddArgs (fmap SourcePath ["foo"]) (TargetPath "/bar") )
+                  ( AddFlags NoChecksum NoChown NoChmod Link NoUnpack [] )
+              ]
+
+    it "with link flag explicit syntax" $
+      let file = Text.unlines ["ADD --link=true foo /bar"]
+       in assertAst
+            file
+              [ Add
+                  ( AddArgs (fmap SourcePath ["foo"]) (TargetPath "/bar") )
+                  ( AddFlags NoChecksum NoChown NoChmod Link NoUnpack [] )
+              ]
+
+    it "with no link flag explicit syntax" $
+      let file = Text.unlines ["ADD --link=false foo /bar"]
+       in assertAst
+            file
+              [ Add
+                  ( AddArgs (fmap SourcePath ["foo"]) (TargetPath "/bar") )
+                  ( AddFlags NoChecksum NoChown NoChmod NoLink NoUnpack [] )
               ]

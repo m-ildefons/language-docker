@@ -1,24 +1,24 @@
 # Runs on pull requests against master, and on master branch
 
-name: Haskell Tests
+name: Hadolint Integration Tests
 
 on:
   push:
     branches:
-      - master
       - wip/*
 
   pull_request:
     branches:
       - master
     paths:
-      - '.github/workflows/haskell.yml'
+      - '.github/workflows/hadolint.yml'
       - 'language-docker.cabal'
       - 'src/**'
       - 'test/**'
 
 jobs:
-  test:
+  hadolint:
+
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -29,17 +29,27 @@ jobs:
 
     steps:
 
-      - name: Check out
-        uses: actions/checkout@v7
-
       - name: Setup Haskell
         id: setup-haskell-cabal
         uses: haskell-actions/setup@v2
         with:
           ghc-version: 9.10.2
 
-      - name: Test
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          repository: hadolint/hadolint
+          path: hadolint
+
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          path: language-docker
+
+      - name: Run Hadolint Tests
+        working-directory: ./hadolint
         run: |
+          sed -i 's/^  \.$/  .\n  ..\/language-docker/' cabal.project
           cabal test --test-show-details=direct
         env:
           HSPEC_OPTIONS: --color
